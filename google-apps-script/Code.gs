@@ -6,6 +6,9 @@
  *   - Mint list: each wallet appears once (case-insensitive).
  *   - Share your work: each X post appears once (matched by post ID, so
  *     x.com / twitter.com links and ?s=20 variants count as the same post).
+ *   - One submission per IP address on each tab. The website sends a hash of
+ *     the visitor's IP (never the raw IP), stored in the "IP hash" column.
+ *     Rows added before this rule have no hash and don't block anyone.
  */
 
 const MINT_SHEET = 'Mint list';
@@ -42,12 +45,16 @@ function addWallet(body) {
   const wallet = String(body.address || '').trim();
   if (!/^0x[a-fA-F0-9]{40}$/.test(wallet)) return { ok: false, code: 'invalid_wallet' };
 
-  const sheet = getSheet(MINT_SHEET, ['Wallet', 'Joined at']);
+  const sheet = getSheet(MINT_SHEET, ['Wallet', 'Joined at', 'IP hash']);
   const key = wallet.toLowerCase();
   if (columnValues(sheet, 1).some(v => v.toLowerCase() === key)) {
     return { ok: false, code: 'duplicate_wallet' };
   }
-  sheet.appendRow([wallet, new Date()]);
+  const ipHash = cleanHash(body.ipHash);
+  if (ipHash && columnValues(sheet, 3).some(v => v === ipHash)) {
+    return { ok: false, code: 'duplicate_ip_wallet' };
+  }
+  sheet.appendRow([wallet, new Date(), ipHash]);
   sheet.getRange(sheet.getLastRow(), 2).setNumberFormat('yyyy-mm-dd hh:mm:ss');
   return { ok: true };
 }
@@ -61,14 +68,18 @@ function addWork(body) {
   const wallet = String(body.wallet || '').trim();
   if (!/^0x[a-fA-F0-9]{40}$/.test(wallet)) return { ok: false, code: 'invalid_wallet' };
 
-  const sheet = getSheet(WORK_SHEET, ['Post ID', 'Post URL', 'Wallet', 'Note', 'Submitted at']);
+  const sheet = getSheet(WORK_SHEET, ['Post ID', 'Post URL', 'Wallet', 'Note', 'Submitted at', 'IP hash']);
   if (columnValues(sheet, 1).some(v => v === postId)) {
     return { ok: false, code: 'duplicate_post' };
+  }
+  const ipHash = cleanHash(body.ipHash);
+  if (ipHash && columnValues(sheet, 6).some(v => v === ipHash)) {
+    return { ok: false, code: 'duplicate_ip_work' };
   }
   const note = String(body.note || '').slice(0, 500);
   // Leading apostrophe stores post IDs as text (they're too long for numbers)
   // and stops notes/links being interpreted as spreadsheet formulas.
-  sheet.appendRow(["'" + postId, safe(url), wallet, safe(note), new Date()]);
+  sheet.appendRow(["'" + postId, safe(url), wallet, safe(note), new Date(), ipHash]);
   sheet.getRange(sheet.getLastRow(), 5).setNumberFormat('yyyy-mm-dd hh:mm:ss');
   return { ok: true };
 }
@@ -80,6 +91,12 @@ function getSheet(name, headers) {
     sheet = ss.insertSheet(name);
     sheet.appendRow(headers);
     sheet.setFrozenRows(1);
+  } else {
+    // Existing tabs get any new header (like "IP hash") added at the end.
+    headers.forEach((h, i) => {
+      const cell = sheet.getRange(1, i + 1);
+      if (!String(cell.getValue()).trim()) cell.setValue(h);
+    });
   }
   return sheet;
 }
@@ -88,6 +105,11 @@ function columnValues(sheet, col) {
   const last = sheet.getLastRow();
   if (last < 2) return [];
   return sheet.getRange(2, col, last - 1, 1).getDisplayValues().map(r => String(r[0]).trim());
+}
+
+function cleanHash(v) {
+  const h = String(v || '').trim().toLowerCase();
+  return /^[a-f0-9]{32}$/.test(h) ? h : '';
 }
 
 function safe(text) {

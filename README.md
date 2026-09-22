@@ -17,6 +17,8 @@ Submissions go to the "VYRA submissions" Google Sheet:
 - **Mint list** tab: Wallet, Joined at. Each wallet appears once (case-insensitive).
 - **Share your work** tab: Post ID, Post URL, Wallet, Note, Submitted at. Each X post appears once
   (matched by post ID, so x.com and twitter.com links to the same post count as duplicates).
+- Each IP address can submit once per tab. Only a hash of the IP is stored (the "IP hash" column),
+  never the IP itself. Delete a row to let that network submit again.
 
 Flow: website → `api/submit.js` on Vercel (validates) → Apps Script in the sheet
 (`google-apps-script/Code.gs`, enforces uniqueness, writes the row).
