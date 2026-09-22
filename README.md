@@ -11,21 +11,25 @@ vercel.json       long cache headers for /assets
 package.json      marks api/ as ES modules
 ```
 
-## Make the forms work (required)
+## Make the forms work (Google Sheets)
 
-The old site saved wallets with `claude.use('db')`, which only exists inside
-Claude's artifact preview, so every submission on Vercel failed.
+Submissions go to the "VYRA submissions" Google Sheet:
+- **Mint list** tab: Wallet, Joined at. Each wallet appears once (case-insensitive).
+- **Share your work** tab: Post ID, Post URL, Wallet, Note, Submitted at. Each X post appears once
+  (matched by post ID, so x.com and twitter.com links to the same post count as duplicates).
 
-1. Vercel dashboard → vyra-website → Storage → Create / connect **Upstash Redis** (free tier is fine).
-2. Connect it to Production and Preview. This adds `KV_REST_API_URL` and `KV_REST_API_TOKEN`.
-3. Redeploy.
+Flow: website → `api/submit.js` on Vercel (validates) → Apps Script in the sheet
+(`google-apps-script/Code.gs`, enforces uniqueness, writes the row).
 
-Until that's done the forms show: "The mint list is not connected yet."
+Setup:
+1. Open the sheet → Extensions → Apps Script. Replace the editor contents with `Code.gs`. Save.
+2. Pick `createSecret` in the function dropdown → Run → allow access. Copy the SECRET from the execution log.
+3. Deploy → New deployment → type **Web app**. Execute as: **Me**. Who has access: **Anyone**. Deploy, copy the URL ending in `/exec`.
+4. Vercel → vyra-website → Settings → Environment Variables, add for Production and Preview:
+   `GOOGLE_SCRIPT_URL` = the /exec URL, `GOOGLE_SCRIPT_SECRET` = the secret.
+5. Redeploy.
 
-Where the data lives (view in the Upstash console):
-- `vyra:wallets` set of lowercase addresses (the mint list). Export with `SMEMBERS vyra:wallets`.
-- `vyra:wallet:<address>` original casing + submittedAt.
-- `vyra:work` list of work submissions, newest first. Read with `LRANGE vyra:work 0 -1`.
+If you edit Code.gs later: Deploy → Manage deployments → edit → Version: New version (keeps the same URL).
 
 ## Things to replace
 
