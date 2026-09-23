@@ -23,6 +23,32 @@
     --ink-dim:#a79cc4;
     color-scheme: dark;
   }
+  .brand-badge {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  backdrop-filter: blur(10px);
+  text-decoration: none;
+}
+
+.brand-logo-img {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+  border-radius: 50%;
+}
+
+.brand-text {
+  font-family: 'Cinzel', serif;
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #fff;
+  letter-spacing: 0.08em;
+}
   *{box-sizing:border-box; margin:0; padding:0;}
   html{scroll-padding-top:env(safe-area-inset-top,0px);}
   body{
@@ -48,11 +74,7 @@
     background:linear-gradient(180deg, rgba(10,7,20,.75), rgba(10,7,20,0));
     pointer-events:none;
   }
-  nav .brand{
-    font-family:'Cinzel', serif; font-weight:700; letter-spacing:.25em;
-    font-size:.85rem; color:var(--ink-dim);
-  }
-  nav .brand b{ color:var(--ink); }
+  
   nav .status{
     display:flex; align-items:center; gap:7px;
     font-size:.72rem; letter-spacing:.12em; color:var(--violet-2);
@@ -846,7 +868,7 @@
 <div class="cursor-glow" id="cursorGlow"></div>
 
 <nav>
-  <div class="brand">VY<b>RA</b></div>
+  <a href="#" class="brand-badge"><img src="assets/logo.png" alt="VYRA" class="brand-logo-img"><span class="brand-text">VYRA</span></a>
   <div class="nav-right">
     <div class="status"><i></i> MINT NOT LIVE</div>
     <button type="button" class="nav-submit-btn" id="openWalletModal"><span class="gem"></span> SUBMIT WALLET</button>
